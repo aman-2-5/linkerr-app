@@ -29,5 +29,26 @@ router.get('/', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+// @route   PUT /api/posts/like/:id
+// @desc    Like or Unlike a post
+router.put('/like/:id', async (req, res) => {
+  try {
+    const post = await Post.findById(req.params.id);
+    const { userId } = req.body;
+
+    // Check if the post has already been liked by this user
+    if (post.likes.includes(userId)) {
+      // Unlike: Remove user from likes array
+      await post.updateOne({ $pull: { likes: userId } });
+      res.json({ message: "Post unliked" });
+    } else {
+      // Like: Add user to likes array
+      await post.updateOne({ $push: { likes: userId } });
+      res.json({ message: "Post liked" });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 module.exports = router;
