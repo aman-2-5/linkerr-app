@@ -21,7 +21,8 @@ mongoose.connect(process.env.MONGO_URI)
 app.use('/api/purchase', purchaseRoute);
 app.use('/api/users', userRoute);
 app.use('/api/auth', authRoute); // <--- ADD THIS
-app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/posts', require('./routes/postRoutes'));
+//app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/services', serviceRoute);
 app.get('/', (req, res) => {
   res.send('LinkServe API is Running');
