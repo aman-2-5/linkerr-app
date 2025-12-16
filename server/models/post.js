@@ -3,7 +3,7 @@ const mongoose = require('mongoose');
 const postSchema = new mongoose.Schema({
   user: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' // Links the post to the Author
+    ref: 'User'
   },
   content: {
     type: String,
@@ -11,6 +11,14 @@ const postSchema = new mongoose.Schema({
   },
   likes: [
     { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+  ],
+  // 👇 NEW SECTION: Comments Array
+  comments: [
+    {
+      user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+      text: { type: String, required: true },
+      date: { type: Date, default: Date.now }
+    }
   ],
   createdAt: {
     type: Date,

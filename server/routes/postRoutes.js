@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
-const Post = require('../models/post');
-const User = require('../models/user'); // Ensure lowercase 'user' to match your file
+const Post = require('../models/Post'); // Ensure this matches your file name (Post.js)
+const User = require('../models/user'); 
 
 // @route   POST /api/posts
 // @desc    Create a new post
@@ -20,15 +20,18 @@ router.post('/', async (req, res) => {
 // @desc    Get all posts (The Feed)
 router.get('/', async (req, res) => {
   try {
-    // .populate('user') fills in the Name/Avatar of the author automatically!
+    // 👇 THIS IS THE FIX: Added .populate('comments.user')
     const posts = await Post.find()
-      .sort({ createdAt: -1 }) // Newest first
-      .populate('user', ['name', 'headline']); 
+      .sort({ createdAt: -1 }) 
+      .populate('user', ['name', 'headline'])
+      .populate('comments.user', ['name']); 
+      
     res.json(posts);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
 });
+
 // @route   PUT /api/posts/like/:id
 // @desc    Like or Unlike a post
 router.put('/like/:id', async (req, res) => {
@@ -46,6 +49,35 @@ router.put('/like/:id', async (req, res) => {
       await post.updateOne({ $push: { likes: userId } });
       res.json({ message: "Post liked" });
     }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// @route   POST /api/posts/comment/:id
+// @desc    Add a comment to a post
+router.post('/comment/:id', async (req, res) => {
+  try {
+    const { userId, text } = req.body;
+    const post = await Post.findById(req.params.id);
+
+    const newComment = {
+      user: userId,
+      text: text,
+      date: new Date()
+    };
+
+    // Add to beginning of comments array
+    post.comments.unshift(newComment);
+
+    await post.save();
+    
+    // Return the post with the new comment populated (so we can show the name immediately)
+    const updatedPost = await Post.findById(req.params.id)
+      .populate('user', ['name', 'headline'])
+      .populate('comments.user', ['name']); // Populate commenter's name
+      
+    res.json(updatedPost);
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

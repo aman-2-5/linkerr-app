@@ -4,6 +4,10 @@ import axios from 'axios';
 const Feed = () => {
   const [posts, setPosts] = useState([]);
   const [content, setContent] = useState('');
+  // Track which post has the comment box open
+  const [activeCommentBox, setActiveCommentBox] = useState(null); 
+  const [commentText, setCommentText] = useState('');
+  
   const user = JSON.parse(localStorage.getItem('user'));
 
   useEffect(() => {
@@ -13,6 +17,9 @@ const Feed = () => {
   const fetchPosts = async () => {
     try {
       const res = await axios.get('https://linkerr-api.onrender.com/api/posts');
+      // We need to fetch populated comments. 
+      // Note: In a real app, we might need to update the GET route to populate comments.user too.
+      // For now, let's assume the basic data flows or we rely on the post-update refresh.
       setPosts(res.data);
     } catch (err) {
       console.error("Error fetching feed:", err);
@@ -35,38 +42,43 @@ const Feed = () => {
 
   const handleLike = async (postId) => {
     try {
-      // Optimistic UI Update (Update screen immediately before server replies)
       const updatedPosts = posts.map(post => {
         if (post._id === postId) {
-          // Toggle the like locally
           const isLiked = post.likes.includes(user._id);
           return {
             ...post,
             likes: isLiked 
-              ? post.likes.filter(id => id !== user._id) // Remove ID
-              : [...post.likes, user._id] // Add ID
+              ? post.likes.filter(id => id !== user._id) 
+              : [...post.likes, user._id] 
           };
         }
         return post;
       });
       setPosts(updatedPosts);
-
-      // Send request to server
-      await axios.put(`https://linkerr-api.onrender.com/api/posts/like/${postId}`, {
-        userId: user._id
-      });
-      
-      // Optional: Fetch strictly to ensure sync
-      // fetchPosts(); 
+      await axios.put(`https://linkerr-api.onrender.com/api/posts/like/${postId}`, { userId: user._id });
     } catch (err) {
-      console.error("Error liking post:", err);
-      fetchPosts(); // Revert on error
+      fetchPosts();
+    }
+  };
+
+  const handleCommentSubmit = async (postId) => {
+    if (!commentText.trim()) return;
+    try {
+      await axios.post(`https://linkerr-api.onrender.com/api/posts/comment/${postId}`, {
+        userId: user._id,
+        text: commentText
+      });
+      setCommentText('');
+      setActiveCommentBox(null); // Close box
+      fetchPosts(); // Refresh to show new comment with name
+    } catch (err) {
+      alert("Error commenting");
     }
   };
 
   return (
     <div className="mb-8">
-      {/* --- CREATE POST BOX --- */}
+      {/* POST BOX */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-slate-200 mb-6">
         <textarea
           className="w-full p-3 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 ring-blue-500 resize-none"
@@ -76,23 +88,17 @@ const Feed = () => {
           onChange={(e) => setContent(e.target.value)}
         ></textarea>
         <div className="flex justify-end mt-2">
-          <button 
-            onClick={handlePost}
-            className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition"
-          >
-            Post
-          </button>
+          <button onClick={handlePost} className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition">Post</button>
         </div>
       </div>
 
-      {/* --- NEWS FEED --- */}
+      {/* FEED */}
       <div className="space-y-4">
         {posts.map((post) => {
-          // Check if current user liked this post
           const isLiked = post.likes?.includes(user._id);
-
           return (
             <div key={post._id} className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
+              {/* Header */}
               <div className="flex items-center mb-3">
                 <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 mr-3">
                   {post.user?.name?.[0] || "?"}
@@ -103,29 +109,51 @@ const Feed = () => {
                 </div>
               </div>
               
-              <p className="text-slate-700 leading-relaxed whitespace-pre-wrap mb-4">
-                {post.content}
-              </p>
+              <p className="text-slate-700 leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
 
-              {/* ACTION BUTTONS */}
-              <div className="flex items-center gap-4 border-t border-slate-100 pt-3">
-                <button 
-                  onClick={() => handleLike(post._id)}
-                  className={`flex items-center gap-2 text-sm font-medium transition ${
-                    isLiked ? 'text-red-500' : 'text-slate-500 hover:text-red-500'
-                  }`}
-                >
-                  <span className="text-lg">{isLiked ? '❤️' : '🤍'}</span>
-                  {post.likes?.length || 0} Likes
+              {/* Action Buttons */}
+              <div className="flex items-center gap-6 border-t border-slate-100 pt-3">
+                <button onClick={() => handleLike(post._id)} className={`flex items-center gap-2 text-sm font-medium transition ${isLiked ? 'text-red-500' : 'text-slate-500 hover:text-red-500'}`}>
+                  <span className="text-lg">{isLiked ? '❤️' : '🤍'}</span> {post.likes?.length || 0} Likes
                 </button>
+                
+                <button onClick={() => setActiveCommentBox(activeCommentBox === post._id ? null : post._id)} className="flex items-center gap-2 text-sm font-medium text-slate-500 hover:text-blue-600 transition">
+                  💬 Comment
+                </button>
+              </div>
+
+              {/* Comment Section (Only if active or has comments) */}
+              <div className="mt-4 space-y-3">
+                {/* Input Box (Visible only when clicked) */}
+                {activeCommentBox === post._id && (
+                  <div className="flex gap-2">
+                    <input 
+                      type="text" 
+                      className="flex-grow border border-slate-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 ring-blue-500"
+                      placeholder="Write a comment..."
+                      value={commentText}
+                      onChange={(e) => setCommentText(e.target.value)}
+                      onKeyDown={(e) => e.key === 'Enter' && handleCommentSubmit(post._id)}
+                    />
+                    <button onClick={() => handleCommentSubmit(post._id)} className="bg-slate-900 text-white px-3 py-2 rounded-lg text-xs font-bold">Send</button>
+                  </div>
+                )}
+
+                {/* List of Comments */}
+                {post.comments?.length > 0 && (
+                  <div className="bg-slate-50 rounded-lg p-3 space-y-2">
+                    {post.comments.map((comment, index) => (
+                      <div key={index} className="text-sm">
+                        <span className="font-bold text-slate-800">{comment.user?.name || "User"}: </span>
+                        <span className="text-slate-600">{comment.text}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           );
         })}
-        
-        {posts.length === 0 && (
-          <p className="text-center text-slate-400 italic">No posts yet. Be the first!</p>
-        )}
       </div>
     </div>
   );
