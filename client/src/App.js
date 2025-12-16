@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
-import Feed from './components/Feed'; // <--- Imported here
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import Feed from './components/Feed';
 
 // Component Imports
 import OrderList from './components/OrderList';
@@ -10,9 +10,37 @@ import Login from './components/Login';
 import Register from './components/Register';
 import UserProfile from './components/UserProfile';
 import Network from './components/Network';
+import SearchResults from './components/SearchResults'; // <--- 1. Import SearchResults
 import './index.css';
 
-// --- Service Card Component (No changes) ---
+// --- SEARCH BAR COMPONENT (Internal) ---
+const SearchBar = () => {
+  const [query, setQuery] = useState('');
+  const navigate = useNavigate();
+
+  const handleSearch = (e) => {
+    if (e.key === 'Enter' && query.trim()) {
+      navigate(`/search?q=${query}`);
+      setQuery('');
+    }
+  };
+
+  return (
+    <div className="relative hidden md:block">
+      <input
+        type="text"
+        placeholder="Search..."
+        className="bg-slate-100 border border-slate-200 rounded-full py-2 px-4 pl-10 text-sm focus:outline-none focus:ring-2 ring-blue-500 w-64 transition-all"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        onKeyDown={handleSearch}
+      />
+      <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
+    </div>
+  );
+};
+
+// --- Service Card Component ---
 const ServiceCard = ({ service, onBook }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
@@ -112,7 +140,6 @@ function App() {
 
       {/* MAIN FEED */}
       <div className="md:col-span-2">
-        {/* 👇 THIS IS THE NEW PART 👇 */}
         <Feed /> 
         
         <CreateService userId={user._id} /> 
@@ -141,7 +168,11 @@ function App() {
         {/* TOP NAVIGATION BAR */}
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
-             <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
+             <div className="flex items-center gap-8">
+               <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
+               {/* 2. SEARCH BAR ADDED HERE */}
+               <SearchBar />
+             </div>
              
              <div className="flex items-center gap-6">
                 <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium">Home</Link>
@@ -157,6 +188,7 @@ function App() {
            <Route path="/" element={<Dashboard />} />
            <Route path="/profile" element={<UserProfile />} />
            <Route path="/network" element={<Network />} />
+           <Route path="/search" element={<SearchResults />} /> {/* <--- 3. NEW ROUTE */}
         </Routes>
 
       </div>
