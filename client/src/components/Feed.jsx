@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { formatDistanceToNow } from 'date-fns'; // <--- NEW IMPORT
 
 const Feed = () => {
   const [posts, setPosts] = useState([]);
@@ -17,9 +18,6 @@ const Feed = () => {
   const fetchPosts = async () => {
     try {
       const res = await axios.get('https://linkerr-api.onrender.com/api/posts');
-      // We need to fetch populated comments. 
-      // Note: In a real app, we might need to update the GET route to populate comments.user too.
-      // For now, let's assume the basic data flows or we rely on the post-update refresh.
       setPosts(res.data);
     } catch (err) {
       console.error("Error fetching feed:", err);
@@ -57,7 +55,7 @@ const Feed = () => {
       setPosts(updatedPosts);
       await axios.put(`https://linkerr-api.onrender.com/api/posts/like/${postId}`, { userId: user._id });
     } catch (err) {
-      fetchPosts();
+      fetchPosts(); // Revert on error
     }
   };
 
@@ -98,17 +96,24 @@ const Feed = () => {
           const isLiked = post.likes?.includes(user._id);
           return (
             <div key={post._id} className="bg-white p-5 rounded-xl shadow-sm border border-slate-200">
-              {/* Header */}
+              
+              {/* 👇 UPDATED HEADER WITH TIMESTAMP 👇 */}
               <div className="flex items-center mb-3">
                 <div className="w-10 h-10 bg-slate-200 rounded-full flex items-center justify-center font-bold text-slate-600 mr-3">
                   {post.user?.name?.[0] || "?"}
                 </div>
                 <div>
-                  <h4 className="font-bold text-slate-900">{post.user?.name || "Unknown User"}</h4>
+                  <div className="flex items-center gap-2">
+                    <h4 className="font-bold text-slate-900">{post.user?.name || "Unknown User"}</h4>
+                    <span className="text-xs text-slate-400">•</span>
+                    <span className="text-xs text-slate-400">
+                      {post.createdAt && formatDistanceToNow(new Date(post.createdAt), { addSuffix: true })}
+                    </span>
+                  </div>
                   <p className="text-xs text-slate-500">{post.user?.headline || "Professional"}</p>
                 </div>
               </div>
-              
+
               <p className="text-slate-700 leading-relaxed whitespace-pre-wrap mb-4">{post.content}</p>
 
               {/* Action Buttons */}
@@ -122,9 +127,9 @@ const Feed = () => {
                 </button>
               </div>
 
-              {/* Comment Section (Only if active or has comments) */}
+              {/* Comment Section */}
               <div className="mt-4 space-y-3">
-                {/* Input Box (Visible only when clicked) */}
+                {/* Input Box */}
                 {activeCommentBox === post._id && (
                   <div className="flex gap-2">
                     <input 
@@ -154,6 +159,10 @@ const Feed = () => {
             </div>
           );
         })}
+        
+        {posts.length === 0 && (
+          <p className="text-center text-slate-400 italic">No posts yet. Be the first!</p>
+        )}
       </div>
     </div>
   );
