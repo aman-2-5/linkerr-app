@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const Post = require('../models/Post'); // Ensure this matches your file name (Post.js)
+const Post = require('../models/post'); // Ensure this matches your file name (Post.js)
 const User = require('../models/user'); 
 
 // @route   POST /api/posts
