@@ -1,8 +1,8 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const http = require('http'); // <--- New Import
-const { Server } = require("socket.io"); // <--- New Import
+const http = require('http'); 
+const { Server } = require("socket.io"); 
 require('dotenv').config();
 
 const app = express();
@@ -20,38 +20,34 @@ mongoose.connect(process.env.MONGO_URI, {
 .catch(err => console.error(err));
 
 // --- SOCKET.IO SETUP ---
-const server = http.createServer(app); // Wrap express app
+const server = http.createServer(app); 
 const io = new Server(server, {
   cors: {
-    origin: "*", // Allow connections from anywhere (for now)
+    origin: "*", 
     methods: ["GET", "POST"]
   }
 });
 
-// Store active socket connections (User ID -> Socket ID)
+// Store active socket connections
 let onlineUsers = new Map();
 
 io.on('connection', (socket) => {
   console.log('⚡ A user connected:', socket.id);
 
-  // When a user logs in, they send their UserID
   socket.on("add-user", (userId) => {
     onlineUsers.set(userId, socket.id);
     console.log(`User ${userId} is actively chatting.`);
   });
 
-  // Handle sending messages
   socket.on("send-msg", (data) => {
     const sendUserSocket = onlineUsers.get(data.to);
     if (sendUserSocket) {
-      // Send to the specific user instantly
       socket.to(sendUserSocket).emit("msg-recieve", data.msg);
     }
   });
 
   socket.on('disconnect', () => {
     console.log('User disconnected');
-    // Optional: remove user from onlineMap
   });
 });
 // -----------------------
@@ -62,10 +58,12 @@ app.use('/api/services', require('./routes/serviceRoutes'));
 app.use('/api/purchase', require('./routes/purchaseRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
-app.use('/api/search', require('./routes/searchRoutes')); // Search Route
+app.use('/api/search', require('./routes/searchRoutes'));
 
-// Quick Route to Get Chat History (We'll add a full route file later if needed)
-const Message = require('./models/Message');
+// 👇 FIX 1: Lowercase 'message' to match filename 'message.js'
+const Message = require('./models/message'); 
+
+// Get Chat History
 app.get('/api/messages/:from/:to', async (req, res) => {
   try {
     const { from, to } = req.params;
@@ -74,21 +72,26 @@ app.get('/api/messages/:from/:to', async (req, res) => {
         { sender: from, recipient: to },
         { sender: to, recipient: from }
       ]
-    }).sort({ createdAt: 1 }); // Oldest first
+    }).sort({ createdAt: 1 }); 
     res.json(messages);
   } catch (ex) {
     res.status(500).json({error: ex.message});
   }
 });
 
+// Add Message
 app.post('/api/messages', async (req, res) => {
   try {
-    const { from, to, message } = req.body;
+    // 👇 FIX 2: Variable name 'message' conflicts with imported model 'Message'
+    // I changed the destructuring to { message: msgText } to avoid conflict
+    const { from, to, message: msgText } = req.body; 
+    
     const data = await Message.create({
-      text: message,
+      text: msgText,
       sender: from,
       recipient: to
     });
+    
     if (data) return res.json({ msg: "Message added successfully." });
     return res.json({ msg: "Failed to add message to the database" });
   } catch (ex) {
@@ -97,5 +100,4 @@ app.post('/api/messages', async (req, res) => {
 });
 
 const PORT = process.env.PORT || 5000;
-// Note: We listen on 'server', not 'app' now!
 server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
