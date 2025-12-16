@@ -45,7 +45,6 @@ const ChatBox = ({ currentUser }) => {
     if (socket.current) {
       socket.current.on("msg-recieve", (msg) => {
         // Only add message if it's from the person we are currently looking at
-        // In a real app, you'd show a notification badge otherwise
         setMessages((prev) => [...prev, { fromSelf: false, text: msg }]);
       });
     }
@@ -56,29 +55,37 @@ const ChatBox = ({ currentUser }) => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  // 👇 UPDATED: Optimistic UI HandleSend Function
   const handleSend = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
 
-    // Send to Socket (Real-time)
-    socket.current.emit("send-msg", {
+    const msgData = {
       to: selectedUser._id,
       from: currentUser._id,
       msg: newMessage,
-    });
+    };
 
-    // Save to Database
-    await axios.post('https://linkerr-api.onrender.com/api/messages', {
-      from: currentUser._id,
-      to: selectedUser._id,
-      message: newMessage,
-    });
-
-    // Update UI locally
+    // 1. UPDATE UI INSTANTLY (Don't wait for server)
     const msgs = [...messages];
     msgs.push({ fromSelf: true, text: newMessage });
     setMessages(msgs);
-    setNewMessage('');
+    setNewMessage(''); // Clear input box instantly
+
+    // 2. Send to Socket (Real-time to other user)
+    socket.current.emit("send-msg", msgData);
+
+    // 3. Save to Database (Background process)
+    try {
+      await axios.post('https://linkerr-api.onrender.com/api/messages', {
+        from: currentUser._id,
+        to: selectedUser._id,
+        message: msgData.msg,
+      });
+    } catch (err) {
+      console.error("Failed to save message to DB");
+      // Optional: Add an error icon to the message if it fails
+    }
   };
 
   if (!currentUser) return null;
