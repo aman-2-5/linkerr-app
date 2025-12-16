@@ -1,16 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
-import Feed from './components/Feed';
 
 // Component Imports
+import Feed from './components/Feed';
+import ChatBox from './components/ChatBox'; // <--- NEW IMPORT
+import SearchResults from './components/SearchResults';
 import OrderList from './components/OrderList';
 import CreateService from './components/CreateService';
 import Login from './components/Login';
 import Register from './components/Register';
 import UserProfile from './components/UserProfile';
 import Network from './components/Network';
-import SearchResults from './components/SearchResults'; // <--- 1. Import SearchResults
 import './index.css';
 
 // --- SEARCH BAR COMPONENT (Internal) ---
@@ -40,7 +41,7 @@ const SearchBar = () => {
   );
 };
 
-// --- Service Card Component ---
+// --- SERVICE CARD COMPONENT ---
 const ServiceCard = ({ service, onBook }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
@@ -138,7 +139,7 @@ function App() {
         </div>
       </div>
 
-      {/* MAIN FEED */}
+      {/* MAIN FEED & SERVICES */}
       <div className="md:col-span-2">
         <Feed /> 
         
@@ -170,7 +171,6 @@ function App() {
           <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
              <div className="flex items-center gap-8">
                <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
-               {/* 2. SEARCH BAR ADDED HERE */}
                <SearchBar />
              </div>
              
@@ -183,13 +183,16 @@ function App() {
           </div>
         </nav>
 
-        {/* ROUTES CONFIGURATION */}
+        {/* ROUTES */}
         <Routes>
            <Route path="/" element={<Dashboard />} />
            <Route path="/profile" element={<UserProfile />} />
            <Route path="/network" element={<Network />} />
-           <Route path="/search" element={<SearchResults />} /> {/* <--- 3. NEW ROUTE */}
+           <Route path="/search" element={<SearchResults />} />
         </Routes>
+
+        {/* 👇 FLOATING CHAT WIDGET (Added Here) */}
+        {user && <ChatBox currentUser={user} />}
 
       </div>
     </Router>
