@@ -13,7 +13,7 @@ const Network = () => {
 
   const fetchUsers = async () => {
     try {
-      const res = await axios.get('http://localhost:5000/api/users');
+      const res = await axios.get('https://linkerr-api.onrender.com/api/users');
       // Filter out the current logged-in user from the list
       const storedUser = JSON.parse(localStorage.getItem('user'));
       const others = res.data.filter(u => u._id !== storedUser?._id);
