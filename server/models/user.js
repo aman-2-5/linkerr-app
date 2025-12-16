@@ -1,33 +1,34 @@
 const mongoose = require('mongoose');
 
-const UserSchema = new mongoose.Schema({
-  // Profile Identity
+const userSchema = new mongoose.Schema({
+  // --- OLD FIELDS (Keep these!) ---
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  headline: { type: String, default: "" }, // e.g. "Full Stack Dev"
-  bio: { type: String, default: "" },
-  avatar: { type: String, default: "" },
+  password: { type: String, required: true },
+  isSeller: { type: Boolean, default: false },
   
-  // Professional Network
-  skills: [{ type: String }],
-  connections: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+  // --- NEW: LINKEDIN PROFILE FIELDS ---
+  headline: { type: String, default: "" }, // e.g. "Cybersecurity Analyst @ VIT"
+  about: { type: String, default: "" },    // Bio
+  location: { type: String, default: "" }, // e.g. "Amaravati, India"
+  skills: [{ type: String }],              // e.g. ["Python", "React", "Nmap"]
   
-  // Marketplace & Financials
-  wallet_balance: { type: Number, default: 0 },
+  // Resume: Experience
+  experience: [{
+    title: String,     // e.g. "Intern"
+    company: String,   // e.g. "Google"
+    year: String,      // e.g. "2024-2025"
+    description: String
+  }],
+
+  // Resume: Education
+  education: [{
+    school: String,    // e.g. "VIT-AP University"
+    degree: String,    // e.g. "Integrated M.Tech CSE"
+    year: String       // e.g. "2026"
+  }],
   
-  // <--- ADD THIS NEW FIELD
-  password: { type: String, required: true }, 
+  createdAt: { type: Date, default: Date.now }
+});
 
-  headline: { type: String },
-  bio: { type: String },
-  // Strategy: Soft Delete
-  isDeleted: { type: Boolean, default: false } 
-}, { timestamps: true });
-
-// Query Middleware: Automatically hide deleted users from searches
-//UserSchema.pre(/^find/, function(next) {
- // this.find({ isDeleted: { $ne: true } });
-  //next();
-//});
-
-module.exports = mongoose.model('User', UserSchema);
+module.exports = mongoose.model('User', userSchema);

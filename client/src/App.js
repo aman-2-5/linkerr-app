@@ -1,11 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+
+// Component Imports
 import OrderList from './components/OrderList';
 import CreateService from './components/CreateService';
 import Login from './components/Login';
-import Register from './components/Register'; // <--- NEW IMPORT
+import Register from './components/Register';
+import UserProfile from './components/UserProfile';
+import Network from './components/Network'; // <--- 1. NEW IMPORT
 import './index.css';
 
+// --- Service Card Component (No changes) ---
 const ServiceCard = ({ service, onBook }) => {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
@@ -27,7 +33,7 @@ const ServiceCard = ({ service, onBook }) => {
 
 function App() {
   const [user, setUser] = useState(null);
-  const [isRegistering, setIsRegistering] = useState(false); // <--- NEW STATE
+  const [isRegistering, setIsRegistering] = useState(false);
   const [services, setServices] = useState([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,6 +45,7 @@ function App() {
 
   const fetchServices = async () => {
     try {
+      // Make sure this URL matches your backend
       const response = await axios.get('https://linkerr-api.onrender.com/api/services');
       setServices(response.data);
       setLoading(false);
@@ -58,6 +65,7 @@ function App() {
     setUser(null);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    window.location.href = '/'; 
   };
 
   const handleBook = async (service) => {
@@ -75,7 +83,7 @@ function App() {
     }
   };
 
-  // --- VIEW LOGIC ---
+  // --- AUTHENTICATION VIEW ---
   if (!user) {
     if (isRegistering) {
       return <Register onSwitchToLogin={() => setIsRegistering(false)} />;
@@ -84,41 +92,74 @@ function App() {
     }
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900 pt-4">
-      <div className="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">
-        
-        {/* PROFILE SIDEBAR */}
-        <div className="md:col-span-1 space-y-6">
-          <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
-            <div className="w-24 h-24 rounded-full bg-blue-100 mx-auto mb-4 flex items-center justify-center text-blue-600 font-bold text-2xl">
-              {user.name.charAt(0)}
-            </div>
-            <h1 className="text-2xl font-bold text-slate-900">{user.name}</h1>
-            <p className="text-slate-600 mt-1 text-sm">{user.email}</p>
-            <button onClick={handleLogout} className="mt-4 text-sm text-red-500 hover:text-red-700 underline">Logout</button>
+  // --- DASHBOARD COMPONENT ---
+  const Dashboard = () => (
+    <div className="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">
+      
+      {/* PROFILE SIDEBAR */}
+      <div className="md:col-span-1 space-y-6">
+        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
+          <div className="w-24 h-24 rounded-full bg-blue-100 mx-auto mb-4 flex items-center justify-center text-blue-600 font-bold text-2xl">
+            {user.name.charAt(0)}
           </div>
-        </div>
-
-        {/* MAIN FEED */}
-        <div className="md:col-span-2">
-          <CreateService userId={user._id} /> 
-          
-          <h2 className="text-xl font-bold text-slate-900 mb-4">Active Services</h2>
-          {loading ? <p>Loading...</p> : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {services.map(service => (
-                <ServiceCard key={service._id} service={service} onBook={handleBook} />
-              ))}
-            </div>
-          )}
-
-          <div className="mt-10">
-             <OrderList userId={user._id} />
+          <h1 className="text-2xl font-bold text-slate-900">{user.name}</h1>
+          <p className="text-slate-600 mt-1 text-sm">{user.email}</p>
+          <div className="mt-4 pt-4 border-t border-slate-100">
+             <Link to="/profile" className="text-blue-600 text-sm font-semibold hover:underline">Edit Profile Info</Link>
           </div>
         </div>
       </div>
+
+      {/* MAIN FEED */}
+      <div className="md:col-span-2">
+        <CreateService userId={user._id} /> 
+        
+        <h2 className="text-xl font-bold text-slate-900 mb-4">Active Services</h2>
+        {loading ? <p>Loading...</p> : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            {services.map(service => (
+              <ServiceCard key={service._id} service={service} onBook={handleBook} />
+            ))}
+          </div>
+        )}
+
+        <div className="mt-10">
+            <OrderList userId={user._id} />
+        </div>
+      </div>
     </div>
+  );
+
+  // --- MAIN APP VIEW (Logged In) ---
+  return (
+    <Router>
+      <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+        
+        {/* TOP NAVIGATION BAR */}
+        <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
+          <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
+             <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
+             
+             <div className="flex items-center gap-6">
+                <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium">Home</Link>
+                {/* 2. NEW LINK */}
+                <Link to="/network" className="text-slate-600 hover:text-blue-600 font-medium">Network</Link>
+                <Link to="/profile" className="text-slate-600 hover:text-blue-600 font-medium">My Profile</Link>
+                <button onClick={handleLogout} className="text-red-500 hover:text-red-700 font-medium text-sm">Logout</button>
+             </div>
+          </div>
+        </nav>
+
+        {/* ROUTES CONFIGURATION */}
+        <Routes>
+           <Route path="/" element={<Dashboard />} />
+           <Route path="/profile" element={<UserProfile />} />
+           {/* 3. NEW ROUTE */}
+           <Route path="/network" element={<Network />} />
+        </Routes>
+
+      </div>
+    </Router>
   );
 }
 
