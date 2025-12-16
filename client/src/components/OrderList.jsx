@@ -10,14 +10,14 @@ const OrderList = ({ userId }) => {
   }, [userId]);
 
   const fetchOrders = () => {
-    axios.get(`http://localhost:5000/api/purchase/${userId}`)
+    axios.get(`https://linkerr-api.onrender.com/api/purchase/${userId}`)
       .then(res => setOrders(res.data))
       .catch(err => console.error(err));
   };
 
   const handleStatusUpdate = async (orderId, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/purchase/${orderId}/status`, {
+      await axios.put(`https://linkerr-api.onrender.com/api/purchase/${orderId}/status`, {
         status: newStatus
       });
       alert(`✅ Order marked as ${newStatus}!`);

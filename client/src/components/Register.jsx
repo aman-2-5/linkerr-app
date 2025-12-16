@@ -16,7 +16,7 @@ const Register = ({ onSwitchToLogin }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/auth/register', formData);
+      await axios.post('https://linkerr-api.onrender.com/api/auth/register', formData);
       alert('✅ Registration Successful! Please Login.');
       onSwitchToLogin(); // Switch back to login screen automatically
     } catch (err) {

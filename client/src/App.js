@@ -39,7 +39,7 @@ function App() {
 
   const fetchServices = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/services');
+      const response = await axios.get('https://linkerr-api.onrender.com/api/services');
       setServices(response.data);
       setLoading(false);
     } catch (error) {
@@ -62,7 +62,7 @@ function App() {
 
   const handleBook = async (service) => {
     try {
-      const response = await axios.post('http://localhost:5000/api/purchase', {
+      const response = await axios.post('https://linkerr-api.onrender.com/api/purchase', {
         serviceId: service._id,
         buyerId: user._id
       });

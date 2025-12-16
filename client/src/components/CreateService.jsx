@@ -18,7 +18,7 @@ const CreateService = ({ userId }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await axios.post('http://localhost:5000/api/services/create', {
+      await axios.post('https://linkerr-api.onrender.com/api/services/create', {
         ...formData,
         provider: userId // We attach the current user as the seller
       });

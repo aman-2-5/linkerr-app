@@ -6,7 +6,7 @@ const UserProfile = () => {
 
   useEffect(() => {
     // Fetch the users from your backend
-    axios.get('http://localhost:5000/api/users')
+    axios.get('https://linkerr-api.onrender.com/api/users')
       .then(res => {
         // Since the API returns an array, we take the first user for now
         if (res.data.length > 0) {
