@@ -1,202 +1,92 @@
-import React, { useState, useEffect } from 'react';
-import axios from 'axios';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+const express = require('express');
+const mongoose = require('mongoose');
+const cors = require('cors');
+const http = require('http'); 
+const { Server } = require("socket.io"); 
+require('dotenv').config();
 
-// Component Imports
-import Feed from './components/Feed';
-import ChatBox from './components/ChatBox'; // <--- NEW IMPORT
-import SearchResults from './components/SearchResults';
-import OrderList from './components/OrderList';
-import CreateService from './components/CreateService';
-import Login from './components/Login';
-import Register from './components/Register';
-import UserProfile from './components/UserProfile';
-import Network from './components/Network';
-import './index.css';
+const app = express();
 
-// --- SEARCH BAR COMPONENT (Internal) ---
-const SearchBar = () => {
-  const [query, setQuery] = useState('');
-  const navigate = useNavigate();
+// Middleware
+app.use(express.json());
+app.use(cors());
 
-  const handleSearch = (e) => {
-    if (e.key === 'Enter' && query.trim()) {
-      navigate(`/search?q=${query}`);
-      setQuery('');
-    }
-  };
-
-  return (
-    <div className="relative hidden md:block">
-      <input
-        type="text"
-        placeholder="Search..."
-        className="bg-slate-100 border border-slate-200 rounded-full py-2 px-4 pl-10 text-sm focus:outline-none focus:ring-2 ring-blue-500 w-64 transition-all"
-        value={query}
-        onChange={(e) => setQuery(e.target.value)}
-        onKeyDown={handleSearch}
-      />
-      <span className="absolute left-3 top-2.5 text-slate-400 text-xs">🔍</span>
-    </div>
-  );
-};
-
-// --- SERVICE CARD COMPONENT ---
-const ServiceCard = ({ service, onBook }) => {
-  return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
-      <div className="relative h-48 w-full bg-slate-100">
-        <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80" alt={service.title} className="w-full h-full object-cover"/>
-        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-semibold px-2 py-1 rounded-full border border-slate-200">{service.category}</span>
-      </div>
-      <div className="p-4 flex flex-col flex-grow">
-        <h3 className="text-slate-900 font-semibold text-lg leading-tight mb-2 line-clamp-2">{service.title}</h3>
-        <p className="text-slate-500 text-sm line-clamp-2 mb-4">{service.description}</p>
-        <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-          <div className="flex flex-col"><span className="text-slate-400 text-xs uppercase tracking-wide">Starting at</span><span className="text-emerald-600 font-bold text-xl">${service.price}</span></div>
-          <button onClick={() => onBook(service)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors">Book Now</button>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-function App() {
-  const [user, setUser] = useState(null);
-  const [isRegistering, setIsRegistering] = useState(false);
-  const [services, setServices] = useState([]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const savedUser = localStorage.getItem('user');
-    if (savedUser) setUser(JSON.parse(savedUser));
-    fetchServices();
-  }, []);
-
-  const fetchServices = async () => {
-    try {
-      const response = await axios.get('https://linkerr-api.onrender.com/api/services');
-      setServices(response.data);
-      setLoading(false);
-    } catch (error) {
-      console.error(error);
-      setLoading(false);
-    }
-  };
-
-  const handleLogin = (data) => {
-    setUser(data.user);
-    localStorage.setItem('token', data.token);
-    localStorage.setItem('user', JSON.stringify(data.user));
-  };
-
-  const handleLogout = () => {
-    setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
-    window.location.href = '/'; 
-  };
-
-  const handleBook = async (service) => {
-    try {
-      const response = await axios.post('https://linkerr-api.onrender.com/api/purchase', {
-        serviceId: service._id,
-        buyerId: user._id
-      });
-      if (response.data.success) {
-        alert(`✅ Order Placed! ID: ${response.data.orderId}`);
-        window.location.reload();
-      }
-    } catch (error) {
-      alert(`❌ Error: ${error.response?.data?.error || error.message}`);
-    }
-  };
-
-  // --- AUTHENTICATION VIEW ---
-  if (!user) {
-    if (isRegistering) {
-      return <Register onSwitchToLogin={() => setIsRegistering(false)} />;
-    } else {
-      return <Login onLogin={handleLogin} onSwitchToRegister={() => setIsRegistering(true)} />;
-    }
+// --- SOCKET.IO SETUP ---
+const server = http.createServer(app); 
+const io = new Server(server, {
+  cors: {
+    origin: "*", 
+    methods: ["GET", "POST"]
   }
+});
 
-  // --- DASHBOARD COMPONENT ---
-  const Dashboard = () => (
-    <div className="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">
-      
-      {/* PROFILE SIDEBAR */}
-      <div className="md:col-span-1 space-y-6">
-        <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
-          <div className="w-24 h-24 rounded-full bg-blue-100 mx-auto mb-4 flex items-center justify-center text-blue-600 font-bold text-2xl">
-            {user.name.charAt(0)}
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900">{user.name}</h1>
-          <p className="text-slate-600 mt-1 text-sm">{user.email}</p>
-          <div className="mt-4 pt-4 border-t border-slate-100">
-             <Link to="/profile" className="text-blue-600 text-sm font-semibold hover:underline">Edit Profile Info</Link>
-          </div>
-        </div>
-      </div>
+let onlineUsers = new Map();
 
-      {/* MAIN FEED & SERVICES */}
-      <div className="md:col-span-2">
-        <Feed /> 
-        
-        <CreateService userId={user._id} /> 
-        
-        <h2 className="text-xl font-bold text-slate-900 mb-4">Active Services</h2>
-        {loading ? <p>Loading...</p> : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            {services.map(service => (
-              <ServiceCard key={service._id} service={service} onBook={handleBook} />
-            ))}
-          </div>
-        )}
+io.on('connection', (socket) => {
+  console.log('⚡ A user connected:', socket.id);
+  socket.on("add-user", (userId) => {
+    onlineUsers.set(userId, socket.id);
+  });
+  socket.on("send-msg", (data) => {
+    const sendUserSocket = onlineUsers.get(data.to);
+    if (sendUserSocket) {
+      socket.to(sendUserSocket).emit("msg-recieve", data.msg);
+    }
+  });
+});
 
-        <div className="mt-10">
-            <OrderList userId={user._id} />
-        </div>
-      </div>
-    </div>
-  );
+// Routes
+app.use('/api/auth', require('./routes/authRoutes'));
+app.use('/api/services', require('./routes/serviceRoutes'));
+app.use('/api/purchase', require('./routes/purchaseRoutes'));
+app.use('/api/users', require('./routes/userRoutes'));
+app.use('/api/posts', require('./routes/postRoutes'));
+app.use('/api/search', require('./routes/searchRoutes'));
 
-  // --- MAIN APP VIEW (Logged In) ---
-  return (
-    <Router>
-      <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-        
-        {/* TOP NAVIGATION BAR */}
-        <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
-          <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
-             <div className="flex items-center gap-8">
-               <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
-               <SearchBar />
-             </div>
-             
-             <div className="flex items-center gap-6">
-                <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium">Home</Link>
-                <Link to="/network" className="text-slate-600 hover:text-blue-600 font-medium">Network</Link>
-                <Link to="/profile" className="text-slate-600 hover:text-blue-600 font-medium">My Profile</Link>
-                <button onClick={handleLogout} className="text-red-500 hover:text-red-700 font-medium text-sm">Logout</button>
-             </div>
-          </div>
-        </nav>
+const Message = require('./models/message'); 
 
-        {/* ROUTES */}
-        <Routes>
-           <Route path="/" element={<Dashboard />} />
-           <Route path="/profile" element={<UserProfile />} />
-           <Route path="/network" element={<Network />} />
-           <Route path="/search" element={<SearchResults />} />
-        </Routes>
+app.get('/api/messages/:from/:to', async (req, res) => {
+  try {
+    const { from, to } = req.params;
+    const messages = await Message.find({
+      $or: [
+        { sender: from, recipient: to },
+        { sender: to, recipient: from }
+      ]
+    }).sort({ createdAt: 1 }); 
+    res.json(messages);
+  } catch (ex) {
+    res.status(500).json({error: ex.message});
+  }
+});
 
-        {/* 👇 FLOATING CHAT WIDGET (Added Here) */}
-        {user && <ChatBox currentUser={user} />}
+app.post('/api/messages', async (req, res) => {
+  try {
+    const { from, to, message: msgText } = req.body; 
+    const data = await Message.create({
+      text: msgText,
+      sender: from,
+      recipient: to
+    });
+    if (data) return res.json({ msg: "Message added successfully." });
+    return res.json({ msg: "Failed to add message to the database" });
+  } catch (ex) {
+    res.status(500).json({error: ex.message});
+  }
+});
 
-      </div>
-    </Router>
-  );
-}
+// 👇 THE FIX: Connect to DB *first*, THEN start server
+const PORT = process.env.PORT || 5000;
 
-export default App;
+mongoose.connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true
+})
+.then(() => {
+    console.log("✅ LinkServe DB Connected");
+    // Only listen once DB is ready
+    server.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
+})
+.catch(err => {
+    console.error("❌ DB Connection Error:", err);
+});
