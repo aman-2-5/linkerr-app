@@ -24,6 +24,7 @@ app.use('/api/auth', authRoute); // <--- ADD THIS
 app.use('/api/posts', require('./routes/postRoutes'));
 //app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/services', serviceRoute);
+app.use('/api/search', require('./routes/searchRoutes'));
 app.get('/', (req, res) => {
   res.send('LinkServe API is Running');
 });
