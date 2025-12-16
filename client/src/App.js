@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
+import Feed from './components/Feed'; // <--- Imported here
 
 // Component Imports
 import OrderList from './components/OrderList';
@@ -8,7 +9,7 @@ import CreateService from './components/CreateService';
 import Login from './components/Login';
 import Register from './components/Register';
 import UserProfile from './components/UserProfile';
-import Network from './components/Network'; // <--- 1. NEW IMPORT
+import Network from './components/Network';
 import './index.css';
 
 // --- Service Card Component (No changes) ---
@@ -45,7 +46,6 @@ function App() {
 
   const fetchServices = async () => {
     try {
-      // Make sure this URL matches your backend
       const response = await axios.get('https://linkerr-api.onrender.com/api/services');
       setServices(response.data);
       setLoading(false);
@@ -112,6 +112,9 @@ function App() {
 
       {/* MAIN FEED */}
       <div className="md:col-span-2">
+        {/* 👇 THIS IS THE NEW PART 👇 */}
+        <Feed /> 
+        
         <CreateService userId={user._id} /> 
         
         <h2 className="text-xl font-bold text-slate-900 mb-4">Active Services</h2>
@@ -142,7 +145,6 @@ function App() {
              
              <div className="flex items-center gap-6">
                 <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium">Home</Link>
-                {/* 2. NEW LINK */}
                 <Link to="/network" className="text-slate-600 hover:text-blue-600 font-medium">Network</Link>
                 <Link to="/profile" className="text-slate-600 hover:text-blue-600 font-medium">My Profile</Link>
                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700 font-medium text-sm">Logout</button>
@@ -154,7 +156,6 @@ function App() {
         <Routes>
            <Route path="/" element={<Dashboard />} />
            <Route path="/profile" element={<UserProfile />} />
-           {/* 3. NEW ROUTE */}
            <Route path="/network" element={<Network />} />
         </Routes>
 
