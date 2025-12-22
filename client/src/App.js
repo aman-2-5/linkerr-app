@@ -42,15 +42,13 @@ const SearchBar = () => {
   );
 };
 
-// --- SERVICE CARD (UPDATED WITH STAR RATINGS) ---
+// --- SERVICE CARD ---
 const ServiceCard = ({ service }) => {
   const placeholderImg = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80";
 
   return (
     <Link to={`/service/${service._id}`} className="block h-full"> 
       <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full cursor-pointer">
-        
-        {/* Thumbnail Section */}
         <div className="relative h-48 w-full bg-slate-100">
           <img 
             src={service.thumbnail || placeholderImg} 
@@ -61,32 +59,16 @@ const ServiceCard = ({ service }) => {
             {service.category}
           </span>
         </div>
-
-        {/* Content Section */}
         <div className="p-4 flex flex-col flex-grow">
-          
-          {/* 👇 TITLE & RATING ROW (The Fix) */}
           <div className="flex justify-between items-start mb-2 gap-2">
-            <h3 className="text-slate-900 font-semibold text-lg leading-tight line-clamp-2 flex-grow">
-              {service.title}
-            </h3>
-            
-            {/* Star Badge */}
+            <h3 className="text-slate-900 font-semibold text-lg leading-tight line-clamp-2 flex-grow">{service.title}</h3>
             <div className="flex items-center gap-1 bg-yellow-50 px-2 py-1 rounded text-xs font-bold text-yellow-700 flex-shrink-0">
               <span>★</span>
-              <span>
-                {/* Check if rating exists and is greater than 0 */}
-                {service.rating && service.rating > 0 ? service.rating.toFixed(1) : "New"}
-              </span>
-              <span className="text-slate-400 font-normal">
-                ({service.numReviews || 0})
-              </span>
+              <span>{service.rating && service.rating > 0 ? service.rating.toFixed(1) : "New"}</span>
+              <span className="text-slate-400 font-normal">({service.numReviews || 0})</span>
             </div>
           </div>
-          {/* 👆 End of Rating Row */}
-
           <p className="text-slate-500 text-sm line-clamp-2 mb-4">{service.description}</p>
-          
           <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
             <div className="flex flex-col">
               <span className="text-slate-400 text-xs uppercase tracking-wide">Starting at</span>
@@ -133,6 +115,22 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/'; 
+  };
+
+  // 👇 IMPORTANT: Using the new 'api/orders/purchase' route here
+  const handleBook = async (service) => {
+    try {
+      const response = await axios.post('https://linkerr-api.onrender.com/api/orders/purchase', {
+        serviceId: service._id,
+        buyerId: user._id
+      });
+      if (response.data.success) {
+        alert(`✅ Order Placed! ID: ${response.data.orderId}`);
+        window.location.reload();
+      }
+    } catch (error) {
+      alert(`❌ Error: ${error.response?.data?.error || error.message}`);
+    }
   };
 
   if (!user) {
@@ -182,6 +180,7 @@ function App() {
         )}
 
         <div className="mt-10">
+            {/* 👇 OrderList now handles buying/selling display */}
             <OrderList userId={user._id} />
         </div>
       </div>
@@ -191,15 +190,12 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-        
-        {/* NAVBAR */}
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
              <div className="flex items-center gap-8">
                <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
                <SearchBar />
              </div>
-             
              <div className="flex items-center gap-6">
                 <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium">Home</Link>
                 <Link to="/network" className="text-slate-600 hover:text-blue-600 font-medium">Network</Link>
@@ -209,7 +205,6 @@ function App() {
           </div>
         </nav>
 
-        {/* ROUTES */}
         <Routes>
            <Route path="/" element={<Dashboard />} />
            <Route path="/profile" element={<UserProfile />} />
@@ -218,9 +213,7 @@ function App() {
            <Route path="/service/:id" element={<ServiceDetails />} />
         </Routes>
 
-        {/* CHAT BOX */}
         {user && <ChatBox currentUser={user} />}
-
       </div>
     </Router>
   );

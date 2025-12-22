@@ -1,24 +1,38 @@
 const mongoose = require('mongoose');
 
 const OrderSchema = new mongoose.Schema({
-  buyerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  sellerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  serviceId: { type: mongoose.Schema.Types.ObjectId, ref: 'Service', required: true },
-  
-  // Data Snapshotting
-  orderSnapshot: {
-    frozenTitle: { type: String, required: true },
-    frozenPrice: { type: Number, required: true },
-    frozenDeliveryTime: { type: Number }
+  service: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Service',
+    required: true
   },
-  
-  amount: { type: Number, required: true },
-  status: { 
+  buyer: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  seller: { // 👈 We must track the seller to show them their sales!
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User',
+    required: true
+  },
+  status: {
+    type: String,
+    enum: ['pending', 'delivered', 'cancelled'],
+    default: 'pending'
+  },
+  deliveryWork: { // 👈 The link to the completed file/code
     type: String, 
-    enum: ['pending', 'active', 'delivered', 'completed', 'cancelled'], 
-    default: 'pending' 
+    default: ""
   },
-}, { timestamps: true });
+  price: {
+    type: Number,
+    required: true
+  },
+  createdAt: {
+    type: Date,
+    default: Date.now
+  }
+});
 
-// ⚠️ IMPORTANT: This line allows the route to use "new Order()"
 module.exports = mongoose.model('Order', OrderSchema);
