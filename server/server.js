@@ -43,6 +43,7 @@ app.use('/api/users', require('./routes/userRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
 app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/reviews', require('./routes/reviewRoutes'));
 
 const Message = require('./models/message'); 
 
