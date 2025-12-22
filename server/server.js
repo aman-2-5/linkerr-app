@@ -14,18 +14,22 @@ mongoose.connect(process.env.MONGO_URI)
   .then(() => console.log("✅ MongoDB Connected"))
   .catch(err => console.log(err));
 
-// Routes
+// --- ROUTES ---
+
+// 👇 AUTH & USERS (Crucial for Login!)
+app.use('/api/auth', require('./routes/authRoutes'));
 app.use('/api/users', require('./routes/userRoutes'));
+
+// 👇 CORE FEATURES
 app.use('/api/services', require('./routes/serviceRoutes'));
 app.use('/api/posts', require('./routes/postRoutes'));
+app.use('/api/orders', require('./routes/orderRoutes'));
+
+// 👇 UTILS (Search, Uploads, Reviews)
+app.use('/api/search', require('./routes/searchRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
 app.use('/api/reviews', require('./routes/reviewRoutes'));
 
-// 👇 THE NEW ORDER ROUTE (Make sure this line exists!)
-app.use('/api/orders', require('./routes/orderRoutes'));
 
-// ❌ DELETE OR REMOVE THIS LINE IF YOU SEE IT:
-// app.use('/api/purchase', require('./routes/purchaseRoutes')); 
-
-const PORT = process.env.PORT || 10000; // Render uses 10000
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));
