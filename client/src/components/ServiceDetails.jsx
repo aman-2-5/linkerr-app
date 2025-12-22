@@ -22,7 +22,7 @@ const ServiceDetails = () => {
         const serviceRes = await axios.get(`https://linkerr-api.onrender.com/api/services/${id}`);
         setService(serviceRes.data);
         
-        // 2. Fetch Reviews for this Service
+        // 2. Fetch Reviews
         const reviewsRes = await axios.get(`https://linkerr-api.onrender.com/api/reviews/${id}`);
         setReviews(reviewsRes.data);
         
@@ -38,13 +38,14 @@ const ServiceDetails = () => {
   const handleBook = async () => {
     if(!currentUser) return alert("Please login to book");
     try {
-      const response = await axios.post('https://linkerr-api.onrender.com/api/purchase', {
+      // 👇 THIS IS THE FIX: Use the correct new route
+      const response = await axios.post('https://linkerr-api.onrender.com/api/orders/purchase', {
         serviceId: service._id,
         buyerId: currentUser._id
       });
       if (response.data.success) {
         alert(`✅ Order Placed! ID: ${response.data.orderId}`);
-        navigate('/');
+        navigate('/'); // Redirect to home
       }
     } catch (error) {
       alert(`❌ Error: ${error.response?.data?.error || error.message}`);
@@ -63,9 +64,8 @@ const ServiceDetails = () => {
         comment: newReview.comment
       });
 
-      // Add new review to the list instantly
       setReviews([res.data, ...reviews]);
-      setNewReview({ rating: 5, comment: '' }); // Reset form
+      setNewReview({ rating: 5, comment: '' });
       alert("Review Posted!");
     } catch (err) {
       alert("Error posting review");
