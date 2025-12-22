@@ -12,29 +12,35 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
-// 2. Configure Storage Engine
+// 2. Configure Storage
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'linkerr_uploads',
-    allowed_formats: ['jpg', 'png', 'jpeg'],
+    allowed_formats: ['jpg', 'png', 'jpeg', 'webp'], // Added webp just in case
   },
 });
 
 const upload = multer({ storage: storage });
 
 // @route   POST /api/upload
-router.post('/', upload.single('image'), (req, res) => {
-  try {
+// @desc    Upload with better error handling
+router.post('/', (req, res) => {
+  // We call upload manually to catch "Config" errors
+  upload.single('image')(req, res, (err) => {
+    if (err) {
+      // 🛑 THIS PRINTS THE REAL ERROR TO THE LOGS
+      console.error("❌ CLOUDINARY UPLOAD ERROR:", JSON.stringify(err, null, 2));
+      return res.status(500).json({ error: "Image upload failed. Check server logs." });
+    }
+
     if (!req.file) {
       return res.status(400).json({ error: "No image file provided" });
     }
-    // Return the secure URL to the frontend
+
+    // Success!
     res.json({ url: req.file.path });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: "Image upload failed" });
-  }
+  });
 });
 
 module.exports = router;
