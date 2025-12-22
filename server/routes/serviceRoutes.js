@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+// 👇 Keeping your lowercase naming convention
 const Service = require('../models/service');
 const User = require('../models/user');
 
@@ -7,11 +8,24 @@ const User = require('../models/user');
 // @desc    Get all services
 router.get('/', async (req, res) => {
   try {
-    // Populate shows the Seller's name instead of just their ID
     const services = await Service.find().populate('seller', 'name email');
     res.json(services);
   } catch (err) {
     res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// @route   GET /api/services/:id
+// @desc    Get single service by ID (For the Details Page)
+router.get('/:id', async (req, res) => {
+  try {
+    const service = await Service.findById(req.params.id).populate('seller', 'name email profilePic headline');
+    if(!service) return res.status(404).json({ msg: "Service not found" });
+    res.json(service);
+  } catch (err) {
+    console.error(err);
+    if(err.kind === 'ObjectId') return res.status(404).json({ msg: "Service not found" });
+    res.status(500).send('Server Error');
   }
 });
 
@@ -27,7 +41,7 @@ router.post('/', async (req, res) => {
       description,
       category,
       price,
-      thumbnail: thumbnail || "" // Save the image URL if provided
+      thumbnail: thumbnail || "" 
     });
 
     const service = await newService.save();

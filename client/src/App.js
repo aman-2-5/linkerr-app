@@ -12,9 +12,10 @@ import Login from './components/Login';
 import Register from './components/Register';
 import UserProfile from './components/UserProfile';
 import Network from './components/Network';
+import ServiceDetails from './components/ServiceDetails'; // 👈 IMPORT THIS
 import './index.css';
 
-// --- SEARCH BAR COMPONENT ---
+// --- SEARCH BAR ---
 const SearchBar = () => {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
@@ -41,31 +42,32 @@ const SearchBar = () => {
   );
 };
 
-// --- SERVICE CARD COMPONENT (UPDATED) ---
-const ServiceCard = ({ service, onBook }) => {
-  // Default image if user didn't upload one
+// --- SERVICE CARD (UPDATED TO LINK) ---
+const ServiceCard = ({ service }) => {
   const placeholderImg = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80";
 
   return (
-    <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
-      <div className="relative h-48 w-full bg-slate-100">
-        {/* 👇 Use the real thumbnail if it exists, otherwise use placeholder */}
-        <img 
-          src={service.thumbnail || placeholderImg} 
-          alt={service.title} 
-          className="w-full h-full object-cover"
-        />
-        <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-semibold px-2 py-1 rounded-full border border-slate-200">{service.category}</span>
-      </div>
-      <div className="p-4 flex flex-col flex-grow">
-        <h3 className="text-slate-900 font-semibold text-lg leading-tight mb-2 line-clamp-2">{service.title}</h3>
-        <p className="text-slate-500 text-sm line-clamp-2 mb-4">{service.description}</p>
-        <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
-          <div className="flex flex-col"><span className="text-slate-400 text-xs uppercase tracking-wide">Starting at</span><span className="text-emerald-600 font-bold text-xl">${service.price}</span></div>
-          <button onClick={() => onBook(service)} className="bg-blue-600 hover:bg-blue-700 text-white font-medium px-4 py-2 rounded-lg text-sm transition-colors">Book Now</button>
+    <Link to={`/service/${service._id}`} className="block h-full"> 
+      {/* 👆 Wrapped entire card in Link */}
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full cursor-pointer">
+        <div className="relative h-48 w-full bg-slate-100">
+          <img 
+            src={service.thumbnail || placeholderImg} 
+            alt={service.title} 
+            className="w-full h-full object-cover"
+          />
+          <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-semibold px-2 py-1 rounded-full border border-slate-200">{service.category}</span>
+        </div>
+        <div className="p-4 flex flex-col flex-grow">
+          <h3 className="text-slate-900 font-semibold text-lg leading-tight mb-2 line-clamp-2">{service.title}</h3>
+          <p className="text-slate-500 text-sm line-clamp-2 mb-4">{service.description}</p>
+          <div className="mt-auto pt-4 flex items-center justify-between border-t border-slate-100">
+            <div className="flex flex-col"><span className="text-slate-400 text-xs uppercase tracking-wide">Starting at</span><span className="text-emerald-600 font-bold text-xl">${service.price}</span></div>
+            {/* Removed 'Book Now' button here, moved to Details Page */}
+          </div>
         </div>
       </div>
-    </div>
+    </Link>
   );
 };
 
@@ -103,21 +105,6 @@ function App() {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
     window.location.href = '/'; 
-  };
-
-  const handleBook = async (service) => {
-    try {
-      const response = await axios.post('https://linkerr-api.onrender.com/api/purchase', {
-        serviceId: service._id,
-        buyerId: user._id
-      });
-      if (response.data.success) {
-        alert(`✅ Order Placed! ID: ${response.data.orderId}`);
-        window.location.reload();
-      }
-    } catch (error) {
-      alert(`❌ Error: ${error.response?.data?.error || error.message}`);
-    }
   };
 
   if (!user) {
@@ -161,7 +148,7 @@ function App() {
         {loading ? <p>Loading...</p> : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
             {services.map(service => (
-              <ServiceCard key={service._id} service={service} onBook={handleBook} />
+              <ServiceCard key={service._id} service={service} />
             ))}
           </div>
         )}
@@ -200,6 +187,8 @@ function App() {
            <Route path="/profile" element={<UserProfile />} />
            <Route path="/network" element={<Network />} />
            <Route path="/search" element={<SearchResults />} />
+           {/* 👇 NEW ROUTE */}
+           <Route path="/service/:id" element={<ServiceDetails />} />
         </Routes>
 
         {/* CHAT BOX */}
