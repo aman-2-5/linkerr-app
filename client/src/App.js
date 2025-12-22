@@ -41,12 +41,20 @@ const SearchBar = () => {
   );
 };
 
-// --- SERVICE CARD COMPONENT ---
+// --- SERVICE CARD COMPONENT (UPDATED) ---
 const ServiceCard = ({ service, onBook }) => {
+  // Default image if user didn't upload one
+  const placeholderImg = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80";
+
   return (
     <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden hover:shadow-md transition-shadow duration-200 flex flex-col h-full">
       <div className="relative h-48 w-full bg-slate-100">
-        <img src="https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80" alt={service.title} className="w-full h-full object-cover"/>
+        {/* 👇 Use the real thumbnail if it exists, otherwise use placeholder */}
+        <img 
+          src={service.thumbnail || placeholderImg} 
+          alt={service.title} 
+          className="w-full h-full object-cover"
+        />
         <span className="absolute top-3 left-3 bg-white/90 backdrop-blur-sm text-slate-700 text-xs font-semibold px-2 py-1 rounded-full border border-slate-200">{service.category}</span>
       </div>
       <div className="p-4 flex flex-col flex-grow">
@@ -127,11 +135,17 @@ function App() {
       {/* PROFILE SIDEBAR */}
       <div className="md:col-span-1 space-y-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
-          <div className="w-24 h-24 rounded-full bg-blue-100 mx-auto mb-4 flex items-center justify-center text-blue-600 font-bold text-2xl">
-            {user.name.charAt(0)}
+          <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 border-2 border-slate-100">
+             {user.profilePic ? (
+               <img src={user.profilePic} alt="Me" className="w-full h-full object-cover" />
+             ) : (
+               <div className="w-full h-full bg-blue-100 flex items-center justify-center text-blue-600 font-bold text-2xl">
+                 {user.name.charAt(0)}
+               </div>
+             )}
           </div>
           <h1 className="text-2xl font-bold text-slate-900">{user.name}</h1>
-          <p className="text-slate-600 mt-1 text-sm">{user.email}</p>
+          <p className="text-slate-600 mt-1 text-sm">{user.headline || user.email}</p>
           <div className="mt-4 pt-4 border-t border-slate-100">
              <Link to="/profile" className="text-blue-600 text-sm font-semibold hover:underline">Edit Profile Info</Link>
           </div>

@@ -1,27 +1,40 @@
-const router = require('express').Router();
-const Service = require('../models/service');
-
-// @route   POST /api/services/create
-// @desc    Create a new service
-router.post('/create', async (req, res) => {
-  try {
-    const newService = new Service(req.body);
-    const savedService = await newService.save();
-    res.status(201).json(savedService);
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
+const express = require('express');
+const router = express.Router();
+const Service = require('../models/Service');
+const User = require('../models/user');
 
 // @route   GET /api/services
 // @desc    Get all services
 router.get('/', async (req, res) => {
   try {
-    // .populate('provider') fills in the User details (name, email) automatically!
-    const services = await Service.find().populate('provider', 'name email headline');
-    res.status(200).json(services);
+    // Populate shows the Seller's name instead of just their ID
+    const services = await Service.find().populate('seller', 'name email');
+    res.json(services);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Server Error' });
+  }
+});
+
+// @route   POST /api/services
+// @desc    Create a new service
+router.post('/', async (req, res) => {
+  const { sellerId, title, description, category, price, thumbnail } = req.body;
+
+  try {
+    const newService = new Service({
+      seller: sellerId,
+      title,
+      description,
+      category,
+      price,
+      thumbnail: thumbnail || "" // Save the image URL if provided
+    });
+
+    const service = await newService.save();
+    res.json(service);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Server Error');
   }
 });
 
