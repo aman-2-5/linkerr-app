@@ -1,72 +1,63 @@
 const express = require('express');
 const router = express.Router();
-const Order = require('../models/Order');
-const Service = require('../models/service'); // Lowercase 'service' to match your file
+const Order = require('../models/order');
+const Service = require('../models/service'); // Ensure 'service' matches your filename
+
+// 👇 DEBUG LOG: This prints when the server starts
+console.log("✅ Order Routes file is being read!");
 
 // @route   POST /api/orders/purchase
-// @desc    Create a new order (Buyer clicks "Book Now")
 router.post('/purchase', async (req, res) => {
+  // 👇 DEBUG LOG: This prints when you click the button
+  console.log("🔔 Purchase Route Hit!"); 
+  console.log("📦 Data received:", req.body);
+
   const { serviceId, buyerId } = req.body;
 
   try {
-    // 1. Find the service to get the price and Seller ID
     const service = await Service.findById(serviceId);
-    if (!service) return res.status(404).json({ error: "Service not found" });
+    if (!service) {
+        console.log("❌ Service not found in DB");
+        return res.status(404).json({ error: "Service not found" });
+    }
 
-    // 2. Create the Order
     const newOrder = new Order({
       service: serviceId,
       buyer: buyerId,
-      seller: service.seller, // Auto-assign the seller from the service
+      seller: service.seller,
       price: service.price
     });
 
     const savedOrder = await newOrder.save();
+    console.log("✅ Order saved:", savedOrder._id);
     res.json({ success: true, orderId: savedOrder._id });
   } catch (err) {
-    console.error(err);
+    console.error("❌ Purchase Error:", err);
     res.status(500).json({ error: "Purchase failed" });
   }
 });
 
 // @route   GET /api/orders/my-orders/:userId
-// @desc    Get ALL orders for a user (both Purchases AND Sales)
 router.get('/my-orders/:userId', async (req, res) => {
   try {
     const userId = req.params.userId;
-
-    // Fetch purchases (I bought)
-    const purchases = await Order.find({ buyer: userId })
-      .populate('service', 'title thumbnail')
-      .populate('seller', 'name email')
-      .sort({ createdAt: -1 });
-
-    // Fetch sales (I sold)
-    const sales = await Order.find({ seller: userId })
-      .populate('service', 'title thumbnail')
-      .populate('buyer', 'name email')
-      .sort({ createdAt: -1 });
-
+    const purchases = await Order.find({ buyer: userId }).populate('service').populate('seller').sort({ createdAt: -1 });
+    const sales = await Order.find({ seller: userId }).populate('service').populate('buyer').sort({ createdAt: -1 });
     res.json({ purchases, sales });
   } catch (err) {
-    console.error(err);
     res.status(500).json({ error: "Could not fetch orders" });
   }
 });
 
 // @route   PUT /api/orders/deliver/:orderId
-// @desc    Seller marks order as delivered
 router.put('/deliver/:orderId', async (req, res) => {
-  const { deliveryLink } = req.body;
-
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ error: "Order not found" });
 
     order.status = 'delivered';
-    order.deliveryWork = deliveryLink;
+    order.deliveryWork = req.body.deliveryLink;
     await order.save();
-
     res.json(order);
   } catch (err) {
     res.status(500).json({ error: "Delivery failed" });
