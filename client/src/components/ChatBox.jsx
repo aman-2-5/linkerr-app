@@ -8,13 +8,16 @@ const ChatBox = ({ currentUser }) => {
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [contacts, setContacts] = useState([]);
+  
+  // 👇 NEW: Track unread messages { userId: count }
+  const [notifications, setNotifications] = useState({});
+  
   const socket = useRef();
   const scrollRef = useRef();
 
   // 1. Connect to Socket.io
   useEffect(() => {
     if (currentUser) {
-      // Connect to the deployed backend URL
       socket.current = io('https://linkerr-api.onrender.com'); 
       socket.current.emit("add-user", currentUser._id);
     }
@@ -36,6 +39,13 @@ const ChatBox = ({ currentUser }) => {
   // 3. Fetch Chat History
   useEffect(() => {
     if (selectedUser) {
+      // Clear notifications for this user when we open their chat
+      setNotifications(prev => {
+        const newNotifs = { ...prev };
+        delete newNotifs[selectedUser._id];
+        return newNotifs;
+      });
+
       const fetchMessages = async () => {
         try {
           const res = await axios.get(`https://linkerr-api.onrender.com/api/messages/${currentUser._id}/${selectedUser._id}`);
@@ -48,15 +58,34 @@ const ChatBox = ({ currentUser }) => {
     }
   }, [selectedUser, currentUser]);
 
-  // 4. Listen for Incoming Messages
+  // 4. Listen for Incoming Messages (UPDATED)
   useEffect(() => {
     if (socket.current) {
-      socket.current.on("msg-recieve", (msg) => {
-        // Only append if it belongs to the currently open chat
-        setMessages((prev) => [...prev, { fromSelf: false, text: msg }]);
+      socket.current.on("msg-recieve", (data) => {
+        // Data is now { msg: "text", from: "userId" }
+        
+        // CASE A: We are chatting with this person right now
+        if (selectedUser && data.from === selectedUser._id) {
+          setMessages((prev) => [...prev, { fromSelf: false, text: data.msg }]);
+        } 
+        // CASE B: We are chatting with someone else (or nobody)
+        else {
+          setNotifications(prev => ({
+            ...prev,
+            [data.from]: (prev[data.from] || 0) + 1
+          }));
+          
+          // Optional: Move this contact to the top of the list
+          setContacts(prev => {
+             const sender = prev.find(u => u._id === data.from);
+             if (!sender) return prev;
+             const others = prev.filter(u => u._id !== data.from);
+             return [sender, ...others];
+          });
+        }
       });
     }
-  }, []);
+  }, [selectedUser]); // Dependency ensures we know who is currently selected
 
   // 5. Auto-scroll
   useEffect(() => {
@@ -73,16 +102,13 @@ const ChatBox = ({ currentUser }) => {
       msg: newMessage,
     };
 
-    // 1. Optimistic UI Update
     const msgs = [...messages];
     msgs.push({ fromSelf: true, text: newMessage });
     setMessages(msgs);
     setNewMessage(''); 
 
-    // 2. Send via Socket
     socket.current.emit("send-msg", msgData);
 
-    // 3. Save to DB
     try {
       await axios.post('https://linkerr-api.onrender.com/api/messages', {
         from: currentUser._id,
@@ -103,15 +129,30 @@ const ChatBox = ({ currentUser }) => {
       {isOpen && (
         <div className="bg-white w-80 h-96 rounded-t-xl shadow-2xl border border-slate-200 flex flex-col mb-4 overflow-hidden">
           
-          {/* Header */}
-          <div className="bg-slate-900 text-white p-3 flex justify-between items-center">
-            <h3 className="font-bold text-sm">
-              {selectedUser ? selectedUser.name : "Messaging"}
-            </h3>
-            <button onClick={() => { setIsOpen(false); setSelectedUser(null); }} className="text-slate-400 hover:text-white">✕</button>
+          {/* HEADER */}
+          <div className="bg-slate-900 text-white p-3 flex justify-between items-center shadow-md z-10">
+            <div className="flex items-center gap-3">
+               {/* 🔙 BACK BUTTON (SVG Icon) */}
+               {selectedUser && (
+                 <button 
+                   onClick={() => setSelectedUser(null)} 
+                   className="text-slate-300 hover:text-white transition p-1 rounded-full hover:bg-slate-800"
+                   title="Back to Contacts"
+                 >
+                   <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
+                     <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
+                   </svg>
+                 </button>
+               )}
+               <h3 className="font-bold text-sm truncate max-w-[150px]">
+                 {selectedUser ? selectedUser.name : "Messages"}
+               </h3>
+            </div>
+            
+            <button onClick={() => { setIsOpen(false); setSelectedUser(null); }} className="text-slate-400 hover:text-white font-bold">✕</button>
           </div>
 
-          {/* Contact List */}
+          {/* CONTACT LIST */}
           {!selectedUser ? (
             <div className="flex-grow overflow-y-auto p-2">
               <p className="text-xs text-slate-400 mb-2 uppercase font-bold">Your Network</p>
@@ -119,30 +160,39 @@ const ChatBox = ({ currentUser }) => {
                 <div 
                   key={contact._id} 
                   onClick={() => setSelectedUser(contact)}
-                  className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
+                  className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
                 >
-                  <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                    {contact.name?.[0]}
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 relative">
+                      {contact.name?.[0]}
+                      {/* 🔴 RED NOTIFICATION DOT */}
+                      {notifications[contact._id] > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full border-2 border-white"></span>
+                      )}
+                    </div>
+                    <div>
+                      <p className={`text-sm ${notifications[contact._id] ? "font-bold text-slate-900" : "text-slate-700"}`}>
+                        {contact.name}
+                      </p>
+                      <p className="text-xs text-slate-500 truncate w-32">{contact.headline || "Professional"}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-sm font-bold text-slate-800">{contact.name}</p>
-                    <p className="text-xs text-slate-500 truncate w-40">{contact.headline || "Professional"}</p>
-                  </div>
+
+                  {/* Notification Count Badge */}
+                  {notifications[contact._id] > 0 && (
+                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
+                      {notifications[contact._id]}
+                    </span>
+                  )}
                 </div>
               ))}
             </div>
           ) : (
-            // Chat Area
+            // CHAT AREA
             <>
               <div className="flex-grow overflow-y-auto p-4 space-y-3 bg-slate-50">
-                <button onClick={() => setSelectedUser(null)} className="text-xs text-blue-600 hover:underline mb-2">← Back to contacts</button>
-                
                 {messages.map((msg, index) => (
-                  <div 
-                    key={index} 
-                    ref={scrollRef}
-                    className={`flex ${msg.fromSelf ? "justify-end" : "justify-start"}`}
-                  >
+                  <div key={index} className={`flex ${msg.fromSelf ? "justify-end" : "justify-start"}`}>
                     <div className={`max-w-[80%] p-2 rounded-lg text-sm ${
                       msg.fromSelf
                         ? "bg-blue-600 text-white rounded-br-none" 
@@ -152,9 +202,10 @@ const ChatBox = ({ currentUser }) => {
                     </div>
                   </div>
                 ))}
+                <div ref={scrollRef} />
               </div>
 
-              {/* Input */}
+              {/* INPUT */}
               <form onSubmit={handleSend} className="p-2 bg-white border-t border-slate-100 flex gap-2">
                 <input
                   type="text"
@@ -170,12 +221,15 @@ const ChatBox = ({ currentUser }) => {
         </div>
       )}
 
-      {/* Floating Button */}
+      {/* FLOATING BUTTON (With Unread Badge) */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
-        className="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105"
+        className="relative bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105"
       >
         <span className="text-2xl">💬</span>
+        {Object.keys(notifications).length > 0 && (
+           <span className="absolute top-0 right-0 bg-red-500 w-4 h-4 rounded-full border-2 border-white"></span>
+        )}
       </button>
     </div>
   );
