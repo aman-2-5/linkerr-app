@@ -6,13 +6,13 @@ import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react
 import Feed from './components/Feed';
 import ChatBox from './components/ChatBox'; 
 import SearchResults from './components/SearchResults';
-import OrderList from './components/OrderList';
 import CreateService from './components/CreateService';
 import Login from './components/Login';
 import Register from './components/Register';
 import UserProfile from './components/UserProfile';
 import Network from './components/Network';
 import ServiceDetails from './components/ServiceDetails'; 
+import OrdersPage from './components/OrdersPage'; // 👈 IMPORT THIS
 import './index.css';
 
 // --- SEARCH BAR ---
@@ -117,22 +117,6 @@ function App() {
     window.location.href = '/'; 
   };
 
-  // 👇 IMPORTANT: Using the new 'api/orders/purchase' route here
-  const handleBook = async (service) => {
-    try {
-      const response = await axios.post('https://linkerr-api.onrender.com/api/orders/purchase', {
-        serviceId: service._id,
-        buyerId: user._id
-      });
-      if (response.data.success) {
-        alert(`✅ Order Placed! ID: ${response.data.orderId}`);
-        window.location.reload();
-      }
-    } catch (error) {
-      alert(`❌ Error: ${error.response?.data?.error || error.message}`);
-    }
-  };
-
   if (!user) {
     if (isRegistering) {
       return <Register onSwitchToLogin={() => setIsRegistering(false)} />;
@@ -178,11 +162,6 @@ function App() {
             ))}
           </div>
         )}
-
-        <div className="mt-10">
-            {/* 👇 OrderList now handles buying/selling display */}
-            <OrderList userId={user._id} />
-        </div>
       </div>
     </div>
   );
@@ -190,30 +169,41 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
+        
+        {/* NAVBAR */}
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
              <div className="flex items-center gap-8">
                <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
                <SearchBar />
              </div>
+             
              <div className="flex items-center gap-6">
                 <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium">Home</Link>
                 <Link to="/network" className="text-slate-600 hover:text-blue-600 font-medium">Network</Link>
+                {/* 👇 NEW ORDERS LINK */}
+                <Link to="/orders" className="text-slate-600 hover:text-blue-600 font-medium">Orders</Link>
+                
                 <Link to="/profile" className="text-slate-600 hover:text-blue-600 font-medium">My Profile</Link>
                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700 font-medium text-sm">Logout</button>
              </div>
           </div>
         </nav>
 
+        {/* ROUTES */}
         <Routes>
            <Route path="/" element={<Dashboard />} />
            <Route path="/profile" element={<UserProfile />} />
            <Route path="/network" element={<Network />} />
            <Route path="/search" element={<SearchResults />} />
            <Route path="/service/:id" element={<ServiceDetails />} />
+           {/* 👇 NEW ROUTE */}
+           <Route path="/orders" element={<OrdersPage user={user} />} />
         </Routes>
 
+        {/* CHAT BOX */}
         {user && <ChatBox currentUser={user} />}
+
       </div>
     </Router>
   );
