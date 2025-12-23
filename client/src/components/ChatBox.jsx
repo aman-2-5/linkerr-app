@@ -14,27 +14,35 @@ const ChatBox = ({ currentUser }) => {
   // 1. Connect to Socket.io
   useEffect(() => {
     if (currentUser) {
-      socket.current = io('https://linkerr-api.onrender.com'); // Connect to Backend
+      // Connect to the deployed backend URL
+      socket.current = io('https://linkerr-api.onrender.com'); 
       socket.current.emit("add-user", currentUser._id);
     }
   }, [currentUser]);
 
-  // 2. Fetch Contacts (People to chat with)
+  // 2. Fetch Contacts
   useEffect(() => {
     const fetchContacts = async () => {
-      const res = await axios.get('https://linkerr-api.onrender.com/api/users');
-      // Filter out yourself
-      setContacts(res.data.filter(u => u._id !== currentUser._id));
+      try {
+        const res = await axios.get('https://linkerr-api.onrender.com/api/users');
+        setContacts(res.data.filter(u => u._id !== currentUser._id));
+      } catch (err) {
+        console.error("Error fetching contacts", err);
+      }
     };
-    fetchContacts();
+    if (currentUser) fetchContacts();
   }, [currentUser]);
 
-  // 3. Fetch Chat History when selecting a user
+  // 3. Fetch Chat History
   useEffect(() => {
     if (selectedUser) {
       const fetchMessages = async () => {
-        const res = await axios.get(`https://linkerr-api.onrender.com/api/messages/${currentUser._id}/${selectedUser._id}`);
-        setMessages(res.data);
+        try {
+          const res = await axios.get(`https://linkerr-api.onrender.com/api/messages/${currentUser._id}/${selectedUser._id}`);
+          setMessages(res.data);
+        } catch (err) {
+          console.error("Error fetching messages", err);
+        }
       };
       fetchMessages();
     }
@@ -44,18 +52,17 @@ const ChatBox = ({ currentUser }) => {
   useEffect(() => {
     if (socket.current) {
       socket.current.on("msg-recieve", (msg) => {
-        // Only add message if it's from the person we are currently looking at
+        // Only append if it belongs to the currently open chat
         setMessages((prev) => [...prev, { fromSelf: false, text: msg }]);
       });
     }
   }, []);
 
-  // 5. Scroll to bottom on new message
+  // 5. Auto-scroll
   useEffect(() => {
     scrollRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // 👇 UPDATED: Optimistic UI HandleSend Function
   const handleSend = async (e) => {
     e.preventDefault();
     if (!newMessage.trim()) return;
@@ -66,16 +73,16 @@ const ChatBox = ({ currentUser }) => {
       msg: newMessage,
     };
 
-    // 1. UPDATE UI INSTANTLY (Don't wait for server)
+    // 1. Optimistic UI Update
     const msgs = [...messages];
     msgs.push({ fromSelf: true, text: newMessage });
     setMessages(msgs);
-    setNewMessage(''); // Clear input box instantly
+    setNewMessage(''); 
 
-    // 2. Send to Socket (Real-time to other user)
+    // 2. Send via Socket
     socket.current.emit("send-msg", msgData);
 
-    // 3. Save to Database (Background process)
+    // 3. Save to DB
     try {
       await axios.post('https://linkerr-api.onrender.com/api/messages', {
         from: currentUser._id,
@@ -84,7 +91,6 @@ const ChatBox = ({ currentUser }) => {
       });
     } catch (err) {
       console.error("Failed to save message to DB");
-      // Optional: Add an error icon to the message if it fails
     }
   };
 
@@ -105,7 +111,7 @@ const ChatBox = ({ currentUser }) => {
             <button onClick={() => { setIsOpen(false); setSelectedUser(null); }} className="text-slate-400 hover:text-white">✕</button>
           </div>
 
-          {/* Contact List (Show if no user selected) */}
+          {/* Contact List */}
           {!selectedUser ? (
             <div className="flex-grow overflow-y-auto p-2">
               <p className="text-xs text-slate-400 mb-2 uppercase font-bold">Your Network</p>
@@ -116,7 +122,7 @@ const ChatBox = ({ currentUser }) => {
                   className="flex items-center gap-3 p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
                 >
                   <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
-                    {contact.name[0]}
+                    {contact.name?.[0]}
                   </div>
                   <div>
                     <p className="text-sm font-bold text-slate-800">{contact.name}</p>
@@ -126,7 +132,7 @@ const ChatBox = ({ currentUser }) => {
               ))}
             </div>
           ) : (
-            // Chat History (Show if user selected)
+            // Chat Area
             <>
               <div className="flex-grow overflow-y-auto p-4 space-y-3 bg-slate-50">
                 <button onClick={() => setSelectedUser(null)} className="text-xs text-blue-600 hover:underline mb-2">← Back to contacts</button>
@@ -135,10 +141,10 @@ const ChatBox = ({ currentUser }) => {
                   <div 
                     key={index} 
                     ref={scrollRef}
-                    className={`flex ${msg.fromSelf || msg.sender === currentUser._id ? "justify-end" : "justify-start"}`}
+                    className={`flex ${msg.fromSelf ? "justify-end" : "justify-start"}`}
                   >
                     <div className={`max-w-[80%] p-2 rounded-lg text-sm ${
-                      msg.fromSelf || msg.sender === currentUser._id
+                      msg.fromSelf
                         ? "bg-blue-600 text-white rounded-br-none" 
                         : "bg-white border border-slate-200 text-slate-800 rounded-bl-none shadow-sm"
                     }`}>
@@ -148,7 +154,7 @@ const ChatBox = ({ currentUser }) => {
                 ))}
               </div>
 
-              {/* Input Area */}
+              {/* Input */}
               <form onSubmit={handleSend} className="p-2 bg-white border-t border-slate-100 flex gap-2">
                 <input
                   type="text"
@@ -164,7 +170,7 @@ const ChatBox = ({ currentUser }) => {
         </div>
       )}
 
-      {/* TOGGLE BUTTON (Floating Bubble) */}
+      {/* Floating Button */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105"
