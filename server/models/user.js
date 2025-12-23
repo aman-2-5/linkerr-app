@@ -14,15 +14,26 @@ const UserSchema = new mongoose.Schema({
     type: String,
     required: true
   },
+  // 👇 ENSURE THESE FIELDS EXIST
   headline: {
     type: String,
-    default: "Student at University"
+    default: ""
   },
-  skills: [String],
-  // New field for the image URL
+  location: {
+    type: String,
+    default: ""
+  },
+  bio: {  // 👈 This was likely missing!
+    type: String,
+    default: ""
+  },
+  skills: {
+    type: [String], // Array of strings
+    default: []
+  },
   profilePic: {
-    type: String, 
-    default: "" 
+    type: String,
+    default: ""
   },
   createdAt: {
     type: Date,
