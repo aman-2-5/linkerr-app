@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Link, useNavigate, Navigate } from 'react-router-dom';
 
+// Component Imports
 import Feed from './components/Feed';
 import ChatBox from './components/ChatBox'; 
 import SearchResults from './components/SearchResults';
@@ -11,8 +12,10 @@ import Register from './components/Register';
 import UserProfile from './components/UserProfile';
 import Network from './components/Network';
 import ServiceDetails from './components/ServiceDetails'; 
-import OrdersPage from './components/OrdersPage'; // 👈 Must exist in components folder
+import OrdersPage from './components/OrdersPage';
 import './index.css';
+
+// --- INLINE COMPONENTS (Kept from your original code) ---
 
 const SearchBar = () => {
   const [query, setQuery] = useState('');
@@ -78,6 +81,8 @@ const ServiceCard = ({ service }) => {
   );
 };
 
+// --- MAIN APP COMPONENT ---
+
 function App() {
   const [user, setUser] = useState(null);
   const [isRegistering, setIsRegistering] = useState(false);
@@ -122,6 +127,7 @@ function App() {
     }
   }
 
+  // Dashboard defined inside App to access 'user' and 'services' state
   const Dashboard = () => (
     <div className="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">
       <div className="md:col-span-1 space-y-6">
@@ -166,6 +172,7 @@ function App() {
           <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
              <div className="flex items-center gap-8">
                <Link to="/" className="text-2xl font-bold text-blue-600 tracking-tight">Linkerr</Link>
+               {/* SearchBar is now safely inside Router */}
                <SearchBar />
              </div>
              
@@ -181,10 +188,19 @@ function App() {
 
         <Routes>
            <Route path="/" element={<Dashboard />} />
+           
+           {/* MY Profile */}
            <Route path="/profile" element={<UserProfile />} />
+           
+           {/* 👇 THIS IS THE MISSING PART: OTHER PEOPLE'S PROFILES */}
+           <Route path="/profile/:id" element={<UserProfile />} />
+
            <Route path="/network" element={<Network />} />
            <Route path="/search" element={<SearchResults />} />
+           
+           {/* Service Details */}
            <Route path="/service/:id" element={<ServiceDetails />} />
+           
            <Route path="/orders" element={<OrdersPage user={user} />} />
         </Routes>
 
