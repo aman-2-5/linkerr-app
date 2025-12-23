@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/User'); // Ensure path is correct
+const User = require('../models/user'); // Ensure path is correct
 
 // @route   GET /api/users
 // @desc    Get all users (for the Network page)
