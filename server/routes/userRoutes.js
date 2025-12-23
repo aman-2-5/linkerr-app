@@ -1,54 +1,44 @@
 const express = require('express');
 const router = express.Router();
-const User = require('../models/user');
+const User = require('../models/User'); // Ensure path is correct
 
 // @route   GET /api/users
-// @desc    Get all users (for the Network page)
+// @desc    Get all users (for the network page)
 router.get('/', async (req, res) => {
   try {
-    const users = await User.find().select('-password');
+    const users = await User.find().select('-password'); // Don't send passwords!
     res.json(users);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+    res.status(500).json({ message: err.message });
   }
 });
 
-// @route   GET /api/users/:id
-// @desc    Get single user by ID
-router.get('/:id', async (req, res) => {
+// @route   PUT /api/users/profile/:id
+// @desc    Update User Profile
+router.put('/profile/:id', async (req, res) => {
   try {
-    const user = await User.findById(req.params.id).select('-password');
-    if (!user) return res.status(404).json({ msg: 'User not found' });
-    res.json(user);
+    const { name, headline, bio, location, skills, profilePic } = req.body;
+
+    // Find user and update
+    const updatedUser = await User.findByIdAndUpdate(
+      req.params.id,
+      {
+        $set: {
+          name,
+          headline,
+          bio,
+          location,
+          skills: Array.isArray(skills) ? skills : skills.split(',').map(s => s.trim()), // Handle comma-separated strings
+          profilePic
+        }
+      },
+      { new: true } // Return the updated document
+    ).select('-password');
+
+    res.json(updatedUser);
   } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
-  }
-});
-
-// @route   PUT /api/users/profile
-// @desc    Update user profile (Headline, Skills, Profile Pic)
-router.put('/profile', async (req, res) => {
-  const { userId, headline, skills, profilePic } = req.body;
-
-  try {
-    let user = await User.findById(userId);
-
-    if (!user) {
-      return res.status(404).json({ msg: 'User not found' });
-    }
-
-    // Update fields if they are provided
-    if (headline) user.headline = headline;
-    if (skills) user.skills = skills; 
-    if (profilePic) user.profilePic = profilePic;
-
-    await user.save();
-    res.json(user);
-  } catch (err) {
-    console.error(err.message);
-    res.status(500).send('Server Error');
+    console.error(err);
+    res.status(500).json({ message: "Server Error" });
   }
 });
 
