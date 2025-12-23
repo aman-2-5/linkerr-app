@@ -9,7 +9,7 @@ const ChatBox = ({ currentUser }) => {
   const [newMessage, setNewMessage] = useState('');
   const [contacts, setContacts] = useState([]);
   
-  // 👇 NEW: Track unread messages { userId: count }
+  // Track unread status (true/false) instead of count
   const [notifications, setNotifications] = useState({});
   
   const socket = useRef();
@@ -39,7 +39,7 @@ const ChatBox = ({ currentUser }) => {
   // 3. Fetch Chat History
   useEffect(() => {
     if (selectedUser) {
-      // Clear notifications for this user when we open their chat
+      // Clear notification for this user immediately
       setNotifications(prev => {
         const newNotifs = { ...prev };
         delete newNotifs[selectedUser._id];
@@ -58,24 +58,22 @@ const ChatBox = ({ currentUser }) => {
     }
   }, [selectedUser, currentUser]);
 
-  // 4. Listen for Incoming Messages (UPDATED)
+  // 4. Listen for Incoming Messages
   useEffect(() => {
     if (socket.current) {
       socket.current.on("msg-recieve", (data) => {
-        // Data is now { msg: "text", from: "userId" }
-        
-        // CASE A: We are chatting with this person right now
+        // CASE A: Chat is open with this person
         if (selectedUser && data.from === selectedUser._id) {
           setMessages((prev) => [...prev, { fromSelf: false, text: data.msg }]);
         } 
-        // CASE B: We are chatting with someone else (or nobody)
+        // CASE B: Chat is closed or with someone else -> Mark as "Has New Message"
         else {
           setNotifications(prev => ({
             ...prev,
-            [data.from]: (prev[data.from] || 0) + 1
+            [data.from]: true // Just mark as true, don't count
           }));
           
-          // Optional: Move this contact to the top of the list
+          // Move sender to top
           setContacts(prev => {
              const sender = prev.find(u => u._id === data.from);
              if (!sender) return prev;
@@ -85,7 +83,7 @@ const ChatBox = ({ currentUser }) => {
         }
       });
     }
-  }, [selectedUser]); // Dependency ensures we know who is currently selected
+  }, [selectedUser]);
 
   // 5. Auto-scroll
   useEffect(() => {
@@ -132,12 +130,11 @@ const ChatBox = ({ currentUser }) => {
           {/* HEADER */}
           <div className="bg-slate-900 text-white p-3 flex justify-between items-center shadow-md z-10">
             <div className="flex items-center gap-3">
-               {/* 🔙 BACK BUTTON (SVG Icon) */}
+               {/* 🔙 Back Button */}
                {selectedUser && (
                  <button 
                    onClick={() => setSelectedUser(null)} 
                    className="text-slate-300 hover:text-white transition p-1 rounded-full hover:bg-slate-800"
-                   title="Back to Contacts"
                  >
                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" strokeWidth={2.5} stroke="currentColor" className="w-5 h-5">
                      <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5L3 12m0 0l7.5-7.5M3 12h18" />
@@ -160,16 +157,20 @@ const ChatBox = ({ currentUser }) => {
                 <div 
                   key={contact._id} 
                   onClick={() => setSelectedUser(contact)}
-                  className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition"
+                  className="flex items-center justify-between p-2 hover:bg-slate-50 rounded-lg cursor-pointer transition relative"
                 >
                   <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600 relative">
-                      {contact.name?.[0]}
-                      {/* 🔴 RED NOTIFICATION DOT */}
-                      {notifications[contact._id] > 0 && (
+                    <div className="relative">
+                      <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center text-xs font-bold text-blue-600">
+                        {contact.name?.[0]}
+                      </div>
+                      
+                      {/* 🔴 RED DOT ON AVATAR (Clean Look) */}
+                      {notifications[contact._id] && (
                         <span className="absolute -top-1 -right-1 bg-red-500 w-3 h-3 rounded-full border-2 border-white"></span>
                       )}
                     </div>
+                    
                     <div>
                       <p className={`text-sm ${notifications[contact._id] ? "font-bold text-slate-900" : "text-slate-700"}`}>
                         {contact.name}
@@ -177,12 +178,10 @@ const ChatBox = ({ currentUser }) => {
                       <p className="text-xs text-slate-500 truncate w-32">{contact.headline || "Professional"}</p>
                     </div>
                   </div>
-
-                  {/* Notification Count Badge */}
-                  {notifications[contact._id] > 0 && (
-                    <span className="bg-red-500 text-white text-[10px] font-bold px-1.5 py-0.5 rounded-full">
-                      {notifications[contact._id]}
-                    </span>
+                  
+                  {/* 🔴 RED DOT ON RIGHT SIDE (Optional extra visibility) */}
+                  {notifications[contact._id] && (
+                    <div className="bg-red-500 w-2 h-2 rounded-full"></div>
                   )}
                 </div>
               ))}
@@ -221,7 +220,7 @@ const ChatBox = ({ currentUser }) => {
         </div>
       )}
 
-      {/* FLOATING BUTTON (With Unread Badge) */}
+      {/* FLOATING BUTTON (With Dot) */}
       <button 
         onClick={() => setIsOpen(!isOpen)}
         className="relative bg-blue-600 hover:bg-blue-700 text-white w-14 h-14 rounded-full shadow-lg flex items-center justify-center transition-transform hover:scale-105"
