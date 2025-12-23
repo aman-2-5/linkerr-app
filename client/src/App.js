@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { BrowserRouter as Router, Routes, Route, Link, useNavigate } from 'react-router-dom';
 
-// Component Imports
 import Feed from './components/Feed';
 import ChatBox from './components/ChatBox'; 
 import SearchResults from './components/SearchResults';
@@ -12,10 +11,9 @@ import Register from './components/Register';
 import UserProfile from './components/UserProfile';
 import Network from './components/Network';
 import ServiceDetails from './components/ServiceDetails'; 
-import OrdersPage from './components/OrdersPage'; // 👈 IMPORT THIS
+import OrdersPage from './components/OrdersPage'; // 👈 Must exist in components folder
 import './index.css';
 
-// --- SEARCH BAR ---
 const SearchBar = () => {
   const [query, setQuery] = useState('');
   const navigate = useNavigate();
@@ -42,7 +40,6 @@ const SearchBar = () => {
   );
 };
 
-// --- SERVICE CARD ---
 const ServiceCard = ({ service }) => {
   const placeholderImg = "https://images.unsplash.com/photo-1555066931-4365d14bab8c?auto=format&fit=crop&w=800&q=80";
 
@@ -125,11 +122,8 @@ function App() {
     }
   }
 
-  // --- DASHBOARD ---
   const Dashboard = () => (
     <div className="max-w-5xl mx-auto px-4 mt-10 grid grid-cols-1 md:grid-cols-3 gap-8 pb-20">
-      
-      {/* PROFILE SIDEBAR */}
       <div className="md:col-span-1 space-y-6">
         <div className="bg-white p-6 rounded-xl shadow-sm border border-slate-200 text-center">
           <div className="w-24 h-24 rounded-full overflow-hidden mx-auto mb-4 border-2 border-slate-100">
@@ -149,7 +143,6 @@ function App() {
         </div>
       </div>
 
-      {/* FEED & SERVICES */}
       <div className="md:col-span-2">
         <Feed /> 
         <CreateService userId={user._id} /> 
@@ -169,8 +162,6 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-        
-        {/* NAVBAR */}
         <nav className="bg-white border-b border-slate-200 sticky top-0 z-50">
           <div className="max-w-5xl mx-auto px-4 h-16 flex justify-between items-center">
              <div className="flex items-center gap-8">
@@ -181,29 +172,23 @@ function App() {
              <div className="flex items-center gap-6">
                 <Link to="/" className="text-slate-600 hover:text-blue-600 font-medium">Home</Link>
                 <Link to="/network" className="text-slate-600 hover:text-blue-600 font-medium">Network</Link>
-                {/* 👇 NEW ORDERS LINK */}
                 <Link to="/orders" className="text-slate-600 hover:text-blue-600 font-medium">Orders</Link>
-                
                 <Link to="/profile" className="text-slate-600 hover:text-blue-600 font-medium">My Profile</Link>
                 <button onClick={handleLogout} className="text-red-500 hover:text-red-700 font-medium text-sm">Logout</button>
              </div>
           </div>
         </nav>
 
-        {/* ROUTES */}
         <Routes>
            <Route path="/" element={<Dashboard />} />
            <Route path="/profile" element={<UserProfile />} />
            <Route path="/network" element={<Network />} />
            <Route path="/search" element={<SearchResults />} />
            <Route path="/service/:id" element={<ServiceDetails />} />
-           {/* 👇 NEW ROUTE */}
            <Route path="/orders" element={<OrdersPage user={user} />} />
         </Routes>
 
-        {/* CHAT BOX */}
         {user && <ChatBox currentUser={user} />}
-
       </div>
     </Router>
   );

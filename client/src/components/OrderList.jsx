@@ -16,10 +16,10 @@ const OrderList = ({ userId }) => {
 
   const fetchOrders = async () => {
     try {
-      // Fetching from the NEW route
       const res = await axios.get(`https://linkerr-api.onrender.com/api/orders/my-orders/${userId}`);
-      setPurchases(res.data.purchases);
-      setSales(res.data.sales);
+      // Safety check to prevent crash if data is missing
+      setPurchases(res.data.purchases || []);
+      setSales(res.data.sales || []);
     } catch (err) {
       console.error("Error fetching orders:", err);
     }
@@ -35,13 +35,12 @@ const OrderList = ({ userId }) => {
       alert("✅ Work Delivered Successfully!");
       setDeliveryLink('');
       setDeliveringOrderId(null);
-      fetchOrders(); // Refresh to update UI
+      fetchOrders(); 
     } catch (err) {
       alert("❌ Delivery failed");
     }
   };
 
-  // --- RENDER HELPERS ---
   const renderStatusBadge = (status) => {
     const styles = {
       pending: "bg-yellow-100 text-yellow-800",
@@ -56,7 +55,7 @@ const OrderList = ({ userId }) => {
   };
 
   const OrdersView = ({ orders, isSellerView }) => {
-    if (orders.length === 0) {
+    if (!orders || orders.length === 0) {
       return <div className="p-8 text-center text-slate-500">No orders found in this section.</div>;
     }
 
@@ -66,12 +65,9 @@ const OrderList = ({ userId }) => {
           <div key={order._id} className="bg-white border border-slate-200 rounded-xl p-5 shadow-sm hover:shadow-md transition">
             <div className="flex justify-between items-start mb-4">
               <div className="flex gap-4">
-                {/* Thumbnail */}
                 <div className="w-16 h-16 bg-slate-100 rounded-lg overflow-hidden flex-shrink-0">
                   <img src={order.service?.thumbnail} alt="Service" className="w-full h-full object-cover" />
                 </div>
-                
-                {/* Details */}
                 <div>
                   <h3 className="font-bold text-slate-900">{order.service?.title}</h3>
                   <div className="text-sm text-slate-500 mt-1 space-y-1">
@@ -86,15 +82,10 @@ const OrderList = ({ userId }) => {
                   </div>
                 </div>
               </div>
-              
-              {/* Status Badge */}
               {renderStatusBadge(order.status)}
             </div>
 
-            {/* 👇 ACTION AREA (Different for Buyer vs Seller) */}
             <div className="border-t border-slate-100 pt-4 mt-2">
-              
-              {/* 🟢 IF I AM THE BUYER */}
               {!isSellerView && (
                 <div>
                   {order.status === 'delivered' ? (
@@ -115,7 +106,6 @@ const OrderList = ({ userId }) => {
                 </div>
               )}
 
-              {/* 🔵 IF I AM THE SELLER */}
               {isSellerView && (
                 <div>
                   {order.status === 'pending' ? (
@@ -154,7 +144,6 @@ const OrderList = ({ userId }) => {
                   )}
                 </div>
               )}
-
             </div>
           </div>
         ))}
@@ -164,7 +153,6 @@ const OrderList = ({ userId }) => {
 
   return (
     <div className="mt-8">
-      {/* Tabs */}
       <div className="flex gap-6 border-b border-slate-200 mb-6">
         <button 
           onClick={() => setActiveTab('buying')}
@@ -180,7 +168,6 @@ const OrderList = ({ userId }) => {
         </button>
       </div>
 
-      {/* Content */}
       {activeTab === 'buying' ? (
         <OrdersView orders={purchases} isSellerView={false} />
       ) : (
