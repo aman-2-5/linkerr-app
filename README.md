@@ -12,7 +12,7 @@
 ---
 
 ## 🌐 Live Demo
-**[View Live Project Here](https://your-linkerr-project-url.vercel.app)** *(Note: The project is currently hosted on a free tier, so the backend may take a moment to wake up on the first request.)*
+**[View Live Project Here](https://linkerr-app.vercel.app/)** *(Note: The project is currently hosted on a free tier, so the backend may take a moment to wake up on the first request.)*
 
 ---
 
@@ -95,3 +95,5 @@ cd client
 npm install
 npm start
 The app should now be running on http://localhost:3000.
+
+This project was built for educational purposes and to demonstrate Full Stack capabilities.
